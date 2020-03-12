@@ -12,6 +12,8 @@ screen = None
 objects = {}
 paused = False
 steps = 0
+font = None
+text_mode = False
 
 key_items = {
     "bot": None,
@@ -24,6 +26,7 @@ class GridObject(object):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.image = None
+        self.text_image = None
         self.grid_position = np.array([0, 0])
         pygame.sprite.Group().add(self)
 
@@ -32,7 +35,7 @@ class GridObject(object):
 
     def _draw(self) -> None:
         if self.image:
-            draw_surface(self.image, self.grid_position * CELL_SIZE)
+            draw_surface(self.text_image if self.text_image else self.image, self.grid_position * CELL_SIZE)
 
     def _input(self, event: pygame.event.Event):
         pass
@@ -56,6 +59,7 @@ class Bot(GridObject, pygame.sprite.Sprite):
     def __init__(self) -> None:
         GridObject.__init__(self)
         self.image = pygame.image.load("robot.png")
+        self.text_image = font.render("@", False, pygame.Color(255, 255, 255))
         self.grid_position = np.array([8, 4])
         self.holding = None
 
@@ -172,18 +176,21 @@ class Hoe(GridObject, pygame.sprite.Sprite):
     def __init__(self) -> None:
         GridObject.__init__(self)
         self.image = pygame.image.load("hoe.png")
+        self.text_image = font.render("/", False, pygame.Color(162, 42, 42))
         self.grid_position = np.array([0, 4])
 
 class Seeds(GridObject, pygame.sprite.Sprite):
     def __init__(self) -> None:
         GridObject.__init__(self)
         self.image = pygame.image.load("seeds.png")
+        self.text_image = font.render("*", False, pygame.Color(40, 255, 40))
         self.grid_position = np.array([GRID_SIZE[0]-1, 4])
 
 class Water(GridObject, pygame.sprite.Sprite):
     def __init__(self) -> None:
         GridObject.__init__(self)
         self.image = pygame.image.load("water.png")
+        self.text_image = font.render("6", False, pygame.Color(0, 0, 255))
         self.grid_position = np.array([8, 0])
 
 class Plant(GridObject, pygame.sprite.Sprite):
@@ -191,16 +198,16 @@ class Plant(GridObject, pygame.sprite.Sprite):
     STAGE_PLANTED = 1
     STAGE_GROWN = 2
 
-    stage_surfaces = {
-        STAGE_TILLED: pygame.image.load("tilled.png"),
-        STAGE_PLANTED: pygame.image.load("planted.png"),
-        STAGE_GROWN: pygame.image.load("grown.png")
-    }
+    stage_surfaces = {}
 
     def __init__(self) -> None:
         GridObject.__init__(self)
         self._stage = 0
+        self.stage_surfaces[self.STAGE_TILLED] = pygame.image.load("tilled.png"), font.render("~", False, pygame.Color(162, 42, 42)),
+        self.stage_surfaces[self.STAGE_PLANTED] = pygame.image.load("planted.png"), font.render(",", False, pygame.Color(0, 255, 0)),
+        self.stage_surfaces[self.STAGE_GROWN] = pygame.image.load("grown.png"), font.render("\"", False, pygame.Color(255, 0, 0))
         self.stage = Plant.STAGE_TILLED
+
 
     @property
     def stage(self) -> int:
@@ -209,7 +216,8 @@ class Plant(GridObject, pygame.sprite.Sprite):
     @stage.setter
     def stage(self, to: int) -> None:
         self._stage = to
-        self.image = self.stage_surfaces[to]
+        self.image = self.stage_surfaces[to][0]
+        self.text_image = self.stage_surfaces[to][1]
 
 def draw_surface(surface: pygame.Surface, position: Iterable) -> None:
     screen.blit(surface, position)
@@ -243,6 +251,7 @@ def main() -> None:
     global screen
     global steps
     global key_items
+    global font
 
     for y in range(GRID_SIZE[1]):
         for x in range(GRID_SIZE[0]):
@@ -252,8 +261,9 @@ def main() -> None:
     icon = pygame.image.load("icon.png")
     pygame.display.set_icon(icon)
     pygame.display.set_caption("Machine Learning Farming")
+    font = pygame.font.Font("kenney_pixel_square.ttf", 16)
 
-    screen = pygame.display.set_mode((GRID_SIZE[0] * 16, GRID_SIZE[1] * 16), pygame.SCALED | pygame.RESIZABLE)
+    screen = pygame.display.set_mode((GRID_SIZE[0] * 16, GRID_SIZE[1] * 16), pygame.RESIZABLE)#, pygame.SCALED)
     running = True
     key_items["bot"] = Bot()
     add_object(key_items["bot"], [8, 4])
